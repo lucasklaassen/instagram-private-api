@@ -6,6 +6,9 @@ export class MediaCommentsFeed extends Feed<MediaCommentsFeedResponse, MediaComm
   id: string;
   moreAvailable = true;
   comments = [];
+  numberOfPagesToFetch = 100;
+  defaultThrottleMs = 6000;
+  currentPage = 1;
   @Expose()
   private nextMaxId: string;
 
@@ -31,8 +34,14 @@ export class MediaCommentsFeed extends Feed<MediaCommentsFeedResponse, MediaComm
     return response.comments;
   }
 
-  async fetchAllComments(): Promise<any> {
+  async fetchAllComments(options): Promise<any> {
     return new Promise(resolve => {
+      if (options && options.numberOfPagesToFetch) {
+        this.numberOfPagesToFetch = options.numberOfPagesToFetch;
+      }
+      if (options && options.defaultThrottleMs) {
+        this.defaultThrottleMs = options.defaultThrottleMs;
+      }
       this.fetchBatchOfComments(() => {
         resolve(this.comments);
       });
@@ -43,12 +52,13 @@ export class MediaCommentsFeed extends Feed<MediaCommentsFeedResponse, MediaComm
     this.items().then(fetchedComments => {
       this.comments = this.comments.concat(fetchedComments);
       setTimeout(() => {
-        if (this.moreAvailable) {
+        if (this.moreAvailable && this.currentPage <= this.numberOfPagesToFetch) {
+          this.currentPage += 1;
           this.fetchBatchOfComments(callback);
         } else {
           callback();
         }
-      }, 3000);
+      }, this.defaultThrottleMs);
     });
   }
 }
