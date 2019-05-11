@@ -4,6 +4,8 @@ import { MediaCommentsFeedResponse, MediaCommentsFeedResponseCommentsItem } from
 
 export class MediaCommentsFeed extends Feed<MediaCommentsFeedResponse, MediaCommentsFeedResponseCommentsItem> {
   id: string;
+  moreAvailable = true;
+  comments = [];
   @Expose()
   private nextMaxId: string;
 
@@ -27,5 +29,26 @@ export class MediaCommentsFeed extends Feed<MediaCommentsFeedResponse, MediaComm
   async items() {
     const response = await this.request();
     return response.comments;
+  }
+
+  async fetchAllComments(): Promise<any> {
+    return new Promise(resolve => {
+      this.fetchBatchOfComments(() => {
+        resolve(this.comments);
+      });
+    });
+  }
+
+  async fetchBatchOfComments(callback?) {
+    this.items().then(fetchedComments => {
+      this.comments = this.comments.concat(fetchedComments);
+      setTimeout(() => {
+        if (this.moreAvailable) {
+          this.fetchBatchOfComments();
+        } else {
+          callback();
+        }
+      }, 3000);
+    });
   }
 }
