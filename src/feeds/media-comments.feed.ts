@@ -39,12 +39,12 @@ export class MediaCommentsFeed extends Feed<MediaCommentsFeedResponse, MediaComm
     });
   }
 
-  async fetchBatchOfComments(callback?) {
+  async fetchBatchOfComments(callback) {
     this.items().then(fetchedComments => {
       this.comments = this.comments.concat(fetchedComments);
       setTimeout(() => {
         if (this.moreAvailable) {
-          this.fetchBatchOfComments();
+          this.fetchBatchOfComments(callback);
         } else {
           callback();
         }
